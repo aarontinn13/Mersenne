@@ -13,8 +13,8 @@
 // sacrifice some efficiency here to make our code as simple as
 // possible for when we convert to assembly.
 typedef struct{
-	int n;                  // Number of active digits stored
-	int digits[MAX_DIGITS]; // Stores the digits in little endian order
+    int n;                  // Number of active digits stored
+    int digits[MAX_DIGITS]; // Stores the digits in little endian order
 } Bigint;
 
 // Checks for leading zeros and reduces the number of active digits.
@@ -31,13 +31,13 @@ typedef struct{
 // keep our functions as simple as possible when converting to assembly.
 void compress(Bigint * a)
 {
-	for( int i = a->n - 1; i >= 0; i-- )
-	{
-		if( a->digits[i] == 0 && i != 0 )
-			a->n -= 1;
-		else
-			return;
-	}
+    for( int i = a->n - 1; i >= 0; i-- )
+    {
+        if( a->digits[i] == 0 && i != 0 )
+            a->n -= 1;
+        else
+            return;
+    }
 }
 
 // Converts a single digit integer (0,9) to a big Int
@@ -46,10 +46,10 @@ void compress(Bigint * a)
 // our program's needs
 Bigint digit_to_big(int a)
 {
-	Bigint b;
-	b.n = 1;
-	b.digits[0] = a;
-	return b;
+    Bigint b;
+    b.n = 1;
+    b.digits[0] = a;
+    return b;
 }
 
 // Prints out the big integer to stdout. Descending
@@ -57,9 +57,9 @@ Bigint digit_to_big(int a)
 // in little endian format.
 void print_big(Bigint b)
 {
-	for( int c = b.n -1; c >= 0; c--)
-		printf("%d", b.digits[c]);
-	printf("\n");
+    for( int c = b.n -1; c >= 0; c--)
+        printf("%d", b.digits[c]);
+    printf("\n");
 }
 
 // Computes c = a * b
@@ -69,38 +69,40 @@ void print_big(Bigint b)
 // https://github.com/silentmatt/javascript-biginteger/blob/master/biginteger.js
 Bigint mult_big(Bigint a, Bigint b)
 {
-	Bigint c;
+    Bigint c;
 
-	// c can have (at most) the number of digits in a and b, added
-	c.n = a.n + b.n;
+    // c can have (at most) the number of digits in a and b, added
+    c.n = a.n + b.n;
 
-	// Initialze all digits in c to zero
-	for( int i = 0; i < c.n; i++ )
-		c.digits[i] = 0;
+    // Initialze all digits in c to zero
+    for( int i = 0; i < c.n; i++ )
+        c.digits[i] = 0;
 
-	// Perform basic multiplication, with some more efficient indexing
-	for( int i = 0; i < b.n; i++ )
-	{
-		int carry = 0;
-		int j;
-		for( j = i; j < a.n + i; j++ )
-		{
-			int val = c.digits[j] + (b.digits[i] * a.digits[j-i]) + carry;
-			carry       = val / 10;
-			c.digits[j] = val % 10;
-		}
-		if( carry > 0 )
-		{
-			int val = c.digits[j] + carry;
-			carry       = val / 10;
-			c.digits[j] = val % 10;
-		}
-	}
-	
-	// Trim any leading zeros
-	compress(&c);
+    // Perform basic multiplication, with some more efficient indexing
+    for( int i = 0; i < b.n; i++ )
+    {
+        int carry = 0;
+        int j;
+        for( j = i; j < a.n + i; j++ )
+        {
+            int val = c.digits[j] + (b.digits[i] * a.digits[j-i]) + carry;
+            carry       = val / 10;
+            c.digits[j] = val % 10;
+        }
 
-	return c;
+        //this takes care of out of bounds carry because above increments past j
+        if( carry > 0 )
+        {
+            int val = c.digits[j] + carry;
+            carry       = val / 10;
+            c.digits[j] = val % 10;
+        }
+    }
+
+    // Trim any leading zeros
+    compress(&c);
+
+    return c;
 }
 
 // Computes c = a - b
@@ -109,28 +111,45 @@ Bigint mult_big(Bigint a, Bigint b)
 // is appropriately sized
 Bigint sub_big(Bigint a, Bigint b)
 {
-	Bigint c;
-	// YOUR CODE HERE
-	// YOUR CODE HERE
-	// YOUR CODE HERE
-	// YOUR CODE HERE
-	// YOUR CODE HERE
-	// YOUR CODE HERE
-	// YOUR CODE HERE
-	return c;
+    // create struct c
+    Bigint c;
+    c.n = a.n;
+    // Initialize all digits in c to zero
+    for( int i = 0; i < c.n; i++ )
+        c.digits[i] = 0;
+    // perform basic subtraction, with some more efficient indexing
+    for( int i = 0; i < a.n; i++ ){
+        int carry = 0;
+
+        // clear b digit when out of bound
+        if (i>=b.n)
+            b.digits[i] = 0;
+
+        //if a digit is less that b digit, we need to carry from next number
+        if (a.digits[i] <  b.digits[i]){
+            carry = 10;
+            if (i != (a.n - 1)){
+                a.digits[i+1] -= 1;
+            }
+        }
+        //if the next number is not the end of the range, we decrement.
+        c.digits[i] = (a.digits[i] - b.digits[i]) + (carry);
+    }
+    compress(&c);
+    return c;
 }
 
 // Computes b = a^p
 // Works by multiplying 'a' by itself p-1 times
 Bigint pow_big(Bigint a, int p )
 {
-	Bigint b = a;
+    Bigint b = a;
 
-	// Just multiply by itself p-1 times
-	for( int i = 1; i < p; i++ )
-		b = mult_big(b, a);
+    // Just multiply by itself p-1 times
+    for( int i = 1; i < p; i++ )
+        b = mult_big(b, a);
 
-	return b;
+    return b;
 }
 
 // compares a and b
@@ -141,28 +160,28 @@ Bigint pow_big(Bigint a, int p )
 // returns 1 if a > b
 int compare_big(Bigint a, Bigint b)
 {
-	// if a has fewer digits than b, its definitely smaller
-	if( a.n < b.n )
-		return -1;
-	
-	// if a has more digits than b, its definitely larger
-	if( a.n > b.n )
-		return 1;
+    // if a has fewer digits than b, its definitely smaller
+    if( a.n < b.n )
+        return -1;
 
-	// otherwise, if they have the same number of digits
-	// we have to scan through them and check. We compare
-	// in descending order, as we want to look at the highest
-	// value digits first.
-	for( int i = a.n - 1; i >= 0; i-- )
-	{
-		if(      a.digits[i] > b.digits[i] )
-			return 1;
-		else if( a.digits[i] < b.digits[i] )
-			return -1;
-	}
+    // if a has more digits than b, its definitely larger
+    if( a.n > b.n )
+        return 1;
 
-	// if we got to here, we are equal
-	return 0;
+    // otherwise, if they have the same number of digits
+    // we have to scan through them and check. We compare
+    // in descending order, as we want to look at the highest
+    // value digits first.
+    for( int i = a.n - 1; i >= 0; i-- )
+    {
+        if(      a.digits[i] > b.digits[i] )
+            return 1;
+        else if( a.digits[i] < b.digits[i] )
+            return -1;
+    }
+
+    // if we got to here, we are equal
+    return 0;
 }
 
 // Multiplies by 10
@@ -170,15 +189,15 @@ int compare_big(Bigint a, Bigint b)
 // we only need to shift our integer array to the right once.
 void shift_right(Bigint * a )
 {
-	// Copy stuff
-	for( int i = a->n; i > 0; i-- )
-		a->digits[i] = a->digits[i-1];
+    // Copy stuff
+    for( int i = a->n; i > 0; i-- )
+        a->digits[i] = a->digits[i-1];
 
-	// Set lowest digit to 0
-	a->digits[0] = 0;
+    // Set lowest digit to 0
+    a->digits[0] = 0;
 
-	// Set to new larger size
-	a->n += 1;
+    // Set to new larger size
+    a->n += 1;
 }
 
 // Divides by 10
@@ -186,13 +205,15 @@ void shift_right(Bigint * a )
 // we only need to shift our integer array to the left once.
 void shift_left(Bigint * a )
 {
-	// YOUR CODE HERE
-	// YOUR CODE HERE
-	// YOUR CODE HERE
-	// YOUR CODE HERE
-	// YOUR CODE HERE
-	// YOUR CODE HERE
-	// YOUR CODE HERE
+    // Copy stuff
+    for( int i = 0; i < ((a->n)-1); i++ )
+        a->digits[i] = a->digits[i+1];
+
+    // Set highest digit to zero
+    //a->digits[((a->n)-1)] = 0;
+
+    // Set to new smaller size
+    a->n -= 1;
 }
 
 // Computes c = a % b
@@ -213,31 +234,31 @@ void shift_left(Bigint * a )
  */
 Bigint mod_big(Bigint a, Bigint b)
 {
-	// Store original denominator for use later
-	Bigint original_b = b;
+    // Store original denominator for use later
+    Bigint original_b = b;
 
-	// Keep multiplying the denominator (b) by 10 until it is larger than the numerator (a)
-	while( compare_big(a, b) == 1 ) // tests if a > b 
-		shift_right(&b);
+    // Keep multiplying the denominator (b) by 10 until it is larger than the numerator (a)
+    while( compare_big(a, b) == 1 ) // tests if a > b
+        shift_right(&b);
 
-	// We went too far, so divide once by 10
-	shift_left(&b);
+    // We went too far, so divide once by 10
+    shift_left(&b);
 
-	// At this point, we have the largest possible multiple of the denominator
-	// without being larger than the numerator.
-	
-	// Keep reducing size of denominator by factor of 10 until it equals its original size
-	while( compare_big(b,original_b) != -1 ) // tests if b >= original_b
-	{
-		// Keep subtracting off denominator from numerator (A)
-		while( compare_big(a,b) != -1 ) // tests if a >= b
-			a = sub_big(a,b);
+    // At this point, we have the largest possible multiple of the denominator
+    // without being larger than the numerator.
 
-		// Once we've gone as far as we can go, reduce size of denominator
-		shift_left(&b);
-	}
+    // Keep reducing size of denominator by factor of 10 until it equals its original size
+    while( compare_big(b,original_b) != -1 ) // tests if b >= original_b
+    {
+        // Keep subtracting off denominator from numerator (A)
+        while( compare_big(a,b) != -1 ) // tests if a >= b
+            a = sub_big(a,b);
 
-	return a;
+        // Once we've gone as far as we can go, reduce size of denominator
+        shift_left(&b);
+    }
+
+    return a;
 }
 
 // The Lucas–Lehmer primality test (LLT) algorithm
@@ -245,30 +266,30 @@ Bigint mod_big(Bigint a, Bigint b)
 // Returns 1 if Mp is prime, 0 otherwise
 int LLT(int p)
 {
-	// Some values we'll use
-	Bigint zero = digit_to_big(0);
-	Bigint one  = digit_to_big(1);
-	Bigint two  = digit_to_big(2);
+    // Some values we'll use
+    Bigint zero = digit_to_big(0);
+    Bigint one  = digit_to_big(1);
+    Bigint two  = digit_to_big(2);
 
-	// Mp = 2^p - 1
-	Bigint Mp = pow_big(two, p);
-	Mp =  sub_big(Mp, one);
- 
-	// s = 4
-	Bigint s = digit_to_big(4);
+    // Mp = 2^p - 1
+    Bigint Mp = pow_big(two, p);
+    Mp =  sub_big(Mp, one);
 
-	for( int i = 0; i < p - 2; i++ )
-	{
-		// s = ((s × s) − 2) mod Mp
-		s = mult_big(s, s);
-		s = sub_big(s, two);
-		s = mod_big(s, Mp);
-	}
+    // s = 4
+    Bigint s = digit_to_big(4);
 
-	if( compare_big(s, zero) == 0 ) // check if s == 0
-		return 1; // PRIME
-	else
-		return 0; // NOT_PRIME
+    for( int i = 0; i < p - 2; i++ )
+    {
+        // s = ((s × s) − 2) mod Mp
+        s = mult_big(s, s);
+        s = sub_big(s, two);
+        s = mod_big(s, Mp);
+    }
+
+    if( compare_big(s, zero) == 0 ) // check if s == 0
+        return 1; // PRIME
+    else
+        return 0; // NOT_PRIME
 }
 
 // Naive algorithm for checking primacy of a regular integer
@@ -278,42 +299,40 @@ int LLT(int p)
 // Returns 1 if p is prime, 0 otherwise
 int is_small_prime(int p)
 {
-	for( int i = 2; i < p-1; i++ )
-		if( p % i == 0 )
-			return 0;
-	return 1;
+    for( int i = 2; i < p-1; i++ )
+        if( p % i == 0 )
+            return 0;
+    return 1;
 }
 
 // Scan through to p = 550, checking for prime Mp's along the way
 int main(void)
 {
-	// Test all p values, 2 to 550
-	for( int p = 2; p < 550; p++ )
-	{
-		// Only test Mp for primacy if p itself is also prime
-		if( is_small_prime(p) )
-		{
-			printf("Testing p = %d ", p);
+    // Test all p values, 2 to 550
+    for( int p = 2; p < 550; p++ )
+    {
+        // Only test Mp for primacy if p itself is also prime
+        if( is_small_prime(p) )
+        {
+            printf("Testing p = %d ", p);
 
-			// Run LLT test of Mp
-			int is_prime = LLT(p);
+            // Run LLT test of Mp
+            int is_prime = LLT(p);
 
-			if(is_prime)
-			{
-				printf("found prime Mp = ");
-				Bigint one  = digit_to_big(1);
-				Bigint two  = digit_to_big(2);
+            if(is_prime)
+            {
+                printf("found prime Mp = ");
+                Bigint one  = digit_to_big(1);
+                Bigint two  = digit_to_big(2);
 
-				// Mp = 2^p - 1
-				Bigint Mp = pow_big(two, p);
-				Mp =  sub_big(Mp, one);
-				print_big(Mp);
-			}
-			else
-				printf("Mp not prime\n");
-
-		}
-	}
-
-	return 0;
+                // Mp = 2^p - 1
+                Bigint Mp = pow_big(two, p);
+                Mp =  sub_big(Mp, one);
+                print_big(Mp);
+            }
+            else
+                printf("Mp not prime\n");
+        }
+    }
+    return 0;
 }
